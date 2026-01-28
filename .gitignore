@@ -59,6 +59,7 @@ Thumbs.db
 *.json
 data/
 datasets/
+models/
 
 # Model files
 *.pkl
