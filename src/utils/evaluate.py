@@ -1,4 +1,5 @@
 import pandas as pd
+import json
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.model_selection import cross_val_score, TimeSeriesSplit
@@ -12,11 +13,16 @@ from sklearn.metrics import (
     f1_score,
     balanced_accuracy_score,
     accuracy_score,
-    roc_curve,
-    precision_recall_curve,
-    average_precision_score
+    roc_curve
 )
 from utils.model import findBestThreshold
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
+METRICS_PATH = os.getenv("METRICS_PATH")
+CM_PATH = os.getenv("CM_PATH")
+FP_PATH = os.getenv("FP_PATH")
 
 
 def modelEvaluation(
@@ -54,29 +60,45 @@ def modelEvaluation(
     y_pred = pipeline.predict(X_test)
     y_proba = pipeline.predict_proba(X_test)[:, 1]
     test_auc = roc_auc_score(y_test, y_proba)
+    acc_score = accuracy_score(y_test, y_pred)
+    balanced_acc_score = balanced_accuracy_score(y_test, y_pred)
 
     print(f"CV ROC-AUC: {cv_auc * 100:.2f}%")
     print(f"CV Accuracy: {cv_acc * 100:.2f}%")
     print(f"Test ROC-AUC: {test_auc * 100:.2f}%")
-    print(f"Test Accuracy: {accuracy_score(y_test, y_pred) * 100:.2f}%")
-    print(f"Balanced Accuracy: {balanced_accuracy_score(y_test, y_pred) * 100:.2f}%")
+    print(f"Test Accuracy: {acc_score * 100:.2f}%")
+    print(f"Balanced Accuracy: {balanced_acc_score * 100:.2f}%")
     print("\nClassification Report:\n")
     present_classes = [str(c) for c in model.classes_ if c in y_test.unique()]
     print(classification_report(y_test, y_pred, target_names=present_classes))
+
+    metrics = {
+        "accuracy": cv_acc,
+        "roc_auc": cv_auc,
+        "balanced_accuracy": balanced_acc_score,
+    }
+
+    with open(f"../../app/{METRICS_PATH}", "w") as f:
+        json.dump(metrics, f)
 
     fig, axes = plt.subplots(2, 2, figsize=(15, 12))
 
     if hasattr(model, 'feature_importances_'):
         importances = pd.DataFrame({
-            'Feature': X.columns,
+            'Feature': pipeline.named_steps['rf'].feature_names_in_,
             'Importance': model.feature_importances_
         }).sort_values(by='Importance', ascending=False)
+
+        importances.to_csv(f"../../app/{FP_PATH}", index=False)
 
         sns.barplot(x='Importance', y='Feature', data=importances.head(15),
                     ax=axes[0, 0], color="skyblue")
         axes[0, 0].set_title("Feature Importances")
 
     cm = confusion_matrix(y_test, y_pred)
+
+    pd.DataFrame(cm).to_csv(f"../../app/{CM_PATH}", index=False)
+
     sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=axes[0, 1],
                 xticklabels=model.classes_, yticklabels=model.classes_)
     axes[0, 1].set_xlabel('Predicted')
@@ -161,35 +183,3 @@ def modelEvaluationWithThreshold(
     plt.show()
 
     return threshold
-
-
-def plot_precision_recall_curve(
-        y_true: pd.Series,
-        y_proba: pd.DataFrame
-        ) -> None:
-    """
-    Plots the Precisio-Recall curve for a binary classification model.
-
-    This visualization is especially suitable for imbalanced datasets,
-    providing a more informative evaluation than ROC curves when the
-    positive class is rare.
-
-    Parameters
-    ----------
-    y_true : pd.Series
-        True binary labels.
-    y_proba : pd.DataFrame
-        Predicted probabilities for the positive class.
-    """
-
-    precision, recall, _ = precision_recall_curve(y_true, y_proba)
-    ap = average_precision_score(y_true, y_proba)
-
-    plt.figure(figsize=(8, 6))
-    plt.plot(recall, precision, label=f'Average Precision = {ap:.2f}')
-    plt.xlabel('Recall')
-    plt.ylabel('Precision')
-    plt.title('Precision–Recall Curve')
-    plt.legend()
-    plt.grid(True)
-    plt.show()

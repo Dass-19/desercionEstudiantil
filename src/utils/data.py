@@ -4,7 +4,7 @@ import pandas as pd
 def divideData(data: pd.DataFrame,
                features: list[str],
                target: str = 'RIESGO_t1',
-               n_periods: int = 2):
+               n_periods: int = 1):
     '''
     Divide into training/test data based on the most recent period.
 

@@ -65,8 +65,15 @@ models/
 *.pkl
 *.joblib
 *.h5
-models/
+artifacts/
 
 # Logs
 *.log
 logs/
+
+.env
+todo.txt
+app/data/
+*.csv
+*.xlsx
+*.json

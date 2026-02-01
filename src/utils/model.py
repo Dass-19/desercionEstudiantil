@@ -27,8 +27,9 @@ def tuneHyperparameters(
 
     pipe = Pipeline([
         ('smote', SMOTE(random_state=42)),
-        ('rf', RandomForestClassifier(random_state=42,
-                                      class_weight='balanced'))
+        ('rf', RandomForestClassifier(
+            random_state=42,
+            class_weight='balanced'))
     ])
 
     paramDist = {
