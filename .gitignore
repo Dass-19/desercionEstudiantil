@@ -54,12 +54,9 @@ ipython_config.py
 Thumbs.db
 
 # Data files
-*.csv
-*.xlsx
-*.json
-data/
-datasets/
-models/
+data/raw
+data/interim
+
 
 # Model files
 *.pkl
@@ -73,7 +70,3 @@ logs/
 
 .env
 todo.txt
-app/data/
-*.csv
-*.xlsx
-*.json

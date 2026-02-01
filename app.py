@@ -1,20 +1,8 @@
 import streamlit as st
 import pandas as pd
-import os
-import sys
 import json
-from pathlib import Path
-from dotenv import load_dotenv
-
-
-ROOT = Path(__file__).resolve().parents[1]
-SRC = ROOT / "src"
-
-sys.path.insert(0, str(SRC))
-
-
-from models.dropoutPredictor import DropoutPredictor
-from utils.figures import (
+from src.models.dropoutPredictor import DropoutPredictor
+from src.utils.figures import (
     plotConfusionMatrix,
     plotFeatureImportances,
     plotAttendanceVsMean,
@@ -23,12 +11,12 @@ from utils.figures import (
 )
 
 
-load_dotenv()
-MODEL_PATH = os.getenv("MODEL_PATH")
-METRICS_PATH = os.getenv("METRICS_PATH")
-CM_PATH = os.getenv("CM_PATH")
-FP_PATH = os.getenv("FP_PATH")
-PROCESSED_DATA_PATH = os.getenv("ALL_PROCESSED_DATA_PATH")
+RF_MODEL_PATH = st.secrets["RF_MODEL_PATH"]
+LR_MODEL_PATH = st.secrets["LR_MODEL_PATH"]
+METRICS_PATH = st.secrets["METRICS_PATH"]
+CM_PATH = st.secrets["CM_PATH"]
+FP_PATH = st.secrets["FP_PATH"]
+PROCESSED_DATA_PATH = st.secrets["ALL_PROCESSED_DATA_PATH"]
 
 
 st.set_page_config(
@@ -39,7 +27,7 @@ st.set_page_config(
 @st.cache_resource
 def load_model():
     try:
-        dp = DropoutPredictor(f"../{MODEL_PATH}" if MODEL_PATH else "")
+        dp = DropoutPredictor([RF_MODEL_PATH, LR_MODEL_PATH])
         return dp
     except Exception as e:
         st.error(f"Error crítico al cargar el modelo: {e}")
@@ -51,7 +39,7 @@ dropoutPredictor = load_model()
 
 @st.cache_data
 def load_metrics():
-    with open(METRICS_PATH if METRICS_PATH else "") as f:
+    with open(str(METRICS_PATH)) as f:
         return json.load(f)
 
 
@@ -76,7 +64,7 @@ fp_data = get_fp_data(FP_PATH)
 
 @st.cache_data
 def load_data():
-    df = pd.read_excel(f"../{PROCESSED_DATA_PATH}")
+    df = pd.read_excel(str(PROCESSED_DATA_PATH))
     return df
 
 
@@ -210,7 +198,7 @@ elif seccion == "Predicción individual":
                 0, 10, 0)
 
         submitted = st.form_submit_button(
-            "Analizar Estudiante",
+            "Predecir deserción",
             use_container_width=True
             )
 
@@ -224,30 +212,22 @@ elif seccion == "Predicción individual":
             'NIVEL': [nivel]
         })
 
-        probabilidad, prediccion = dropoutPredictor.predict(input_data)
-
-        st.divider()
-
-        if prediccion == 1:
+        prob_rf, pred, prob_lr = dropoutPredictor.predict(input_data)
+        if pred == 1:
             st.markdown(f"""
                 <div class="result-box high-risk">
-                    <h2 style='margin:0;'>Riesgo de deserción</h2>
-                    <p>El modelo detectó patrones críticos de deserción.</p>
-                    <h1 style='margin:0;'>{probabilidad:.1%}</h1>
+                    <h1 style='margin:0;'>Riesgo del {prob_rf:.1%}</h1>
                 </div>
             """, unsafe_allow_html=True)
+            st.caption("El modelo detectó patrones críticos de deserción.")
         else:
             st.markdown(f"""
-                <div class="result-box low-risk">
-                    <h2 style='margin:0;'>Sin iesgo de deserción</h2>
-                    <p>El estudiante presenta indicadores de estabilidad académica.</p>
-                    <h1 style='margin:0;'>{probabilidad:.1%}</h1>
+                    <h1 style='margin:0;'>Riesgo del {prob_rf:.1%}</h1>
                 </div>
             """, unsafe_allow_html=True)
+            st.caption("El modelo no detectó patrones de deserción.")
 
-        st.subheader("¿Por qué el modelo predice esto?")
-
+        st.subheader("Factores que influyen en la predicción")
         with st.spinner("Analizando factores clave..."):
-            fig_explain = dropoutPredictor.explain()
-
-            st.pyplot(fig_explain, width='stretch')
+            fig = dropoutPredictor.explain()
+            st.pyplot(fig, )

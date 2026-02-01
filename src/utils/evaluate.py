@@ -1,3 +1,6 @@
+from pathlib import Path
+import sys
+import os
 import pandas as pd
 import json
 import matplotlib.pyplot as plt
@@ -16,13 +19,17 @@ from sklearn.metrics import (
     roc_curve
 )
 from utils.model import findBestThreshold
-import os
 from dotenv import load_dotenv
-load_dotenv()
 
-METRICS_PATH = os.getenv("METRICS_PATH")
-CM_PATH = os.getenv("CM_PATH")
-FP_PATH = os.getenv("FP_PATH")
+
+ROOT = Path.cwd().resolve().parents[0]
+sys.path.insert(0, str(ROOT))
+
+
+load_dotenv()
+METRICS_PATH = ROOT / str(os.getenv("METRICS_PATH"))
+CM_PATH = ROOT / str(os.getenv("CM_PATH"))
+FP_PATH = ROOT / str(os.getenv("FP_PATH"))
 
 
 def modelEvaluation(
@@ -74,11 +81,11 @@ def modelEvaluation(
 
     metrics = {
         "accuracy": cv_acc,
-        "roc_auc": cv_auc,
+        "roc_auc": test_auc,
         "balanced_accuracy": balanced_acc_score,
     }
 
-    with open(f"../../app/{METRICS_PATH}", "w") as f:
+    with open(METRICS_PATH, "w") as f:
         json.dump(metrics, f)
 
     fig, axes = plt.subplots(2, 2, figsize=(15, 12))
@@ -89,7 +96,7 @@ def modelEvaluation(
             'Importance': model.feature_importances_
         }).sort_values(by='Importance', ascending=False)
 
-        importances.to_csv(f"../../app/{FP_PATH}", index=False)
+        importances.to_csv(FP_PATH, index=False)
 
         sns.barplot(x='Importance', y='Feature', data=importances.head(15),
                     ax=axes[0, 0], color="skyblue")
@@ -97,7 +104,7 @@ def modelEvaluation(
 
     cm = confusion_matrix(y_test, y_pred)
 
-    pd.DataFrame(cm).to_csv(f"../../app/{CM_PATH}", index=False)
+    pd.DataFrame(cm).to_csv(CM_PATH, index=False)
 
     sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=axes[0, 1],
                 xticklabels=model.classes_, yticklabels=model.classes_)

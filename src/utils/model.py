@@ -35,10 +35,10 @@ def tuneHyperparameters(
     paramDist = {
         'smote__sampling_strategy': ['auto', 'not majority'],
         'smote__k_neighbors': [3, 5, 7],
-        'rf__n_estimators': [100, 200, 300, 400, 500],
+        'rf__n_estimators': [100, 200, 300, 400, 500, 600, 700],
         'rf__max_depth': [6, 9, 12, 15, 18, None],
-        'rf__min_samples_split': [2, 5, 10],
-        'rf__min_samples_leaf': [1, 3, 5],
+        'rf__min_samples_split': [1, 3, 5, 7, 10],
+        'rf__min_samples_leaf': [1, 3, 5, 7, 9],
         'rf__max_features': ['sqrt', 'log2', None],
         'rf__criterion': ['gini', 'entropy']
     }
@@ -54,7 +54,7 @@ def tuneHyperparameters(
     search = RandomizedSearchCV(
         estimator=pipe,
         param_distributions=paramDist,
-        n_iter=40,
+        n_iter=30,
         cv=cv,
         scoring=scoring,
         refit='roc_auc',
