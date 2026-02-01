@@ -18,6 +18,7 @@ METRICS_PATH = st.secrets["METRICS_PATH"]
 CM_PATH = st.secrets["CM_PATH"]
 FP_PATH = st.secrets["FP_PATH"]
 PROCESSED_DATA_PATH = st.secrets["ALL_PROCESSED_DATA_PATH"]
+LOG_PATH = st.secrets["LOG_PATH"]
 
 
 st.set_page_config(
@@ -215,6 +216,7 @@ elif seccion == "Predicción individual":
 
         prob_rf, pred, prob_lr = dropoutPredictor.predict(input_data)
         logPrediction(
+            LOG_PATH,
             prob_rf,
             prob_lr,
             pred,

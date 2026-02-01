@@ -1,20 +1,17 @@
 from datetime import datetime, timezone
 from pathlib import Path
 import csv
-import os
-from dotenv import load_dotenv
-load_dotenv()
-
-LOG_PATH = Path(str(os.getenv("LOG_PATH")))
 
 
 def logPrediction(
+        path: str,
         prob_rf: float,
         prob_lr: float,
         prediction: int,
         threshold: float,
         model_version: str
         ):
+    LOG_PATH = Path("LOG_PATH")
     is_new = not LOG_PATH.exists()
 
     with open(str(LOG_PATH), mode="a", newline="", encoding="utf-8") as f:
