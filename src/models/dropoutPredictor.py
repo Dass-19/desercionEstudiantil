@@ -16,6 +16,7 @@ class DropoutPredictor:
         self.rf_model = rf_artifact["model"]
         self.rf_threshold = rf_artifact["threshold"]
         self.rf_features = rf_artifact["features"]
+        self.rf_version = rf_artifact["model_version"]
         model_final = self.rf_model[-1] if hasattr(self.rf_model, "steps") else self.model
         self.explainer = shap.TreeExplainer(model_final)
         self.data = None
@@ -24,6 +25,7 @@ class DropoutPredictor:
         self.lr_model = lr_artifact["model"]
         self.lr_threshold = lr_artifact["threshold"]
         self.lr_features = lr_artifact["features"]
+        self.lr_version = lr_artifact["model_version"]
 
     def predict(self, X: pd.DataFrame):
         '''

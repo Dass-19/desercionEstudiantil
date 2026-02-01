@@ -57,8 +57,5 @@ Thumbs.db
 data/raw
 data/interim
 
-# Logs
-*.log
-logs/
 
 .env

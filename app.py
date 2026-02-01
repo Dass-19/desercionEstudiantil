@@ -9,6 +9,7 @@ from src.utils.figures import (
     plotPromAverage,
     plotStudentsLevel
 )
+from src.utils.logging import logPrediction
 
 
 RF_MODEL_PATH = st.secrets["RF_MODEL_PATH"]
@@ -213,6 +214,14 @@ elif seccion == "Predicción individual":
         })
 
         prob_rf, pred, prob_lr = dropoutPredictor.predict(input_data)
+        logPrediction(
+            prob_rf,
+            prob_lr,
+            pred,
+            dropoutPredictor.rf_threshold,
+            dropoutPredictor.rf_version
+        )
+
         if pred == 1:
             st.markdown(f"""
                 <div class="result-box high-risk">
