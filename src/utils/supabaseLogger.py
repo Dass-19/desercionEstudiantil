@@ -20,7 +20,7 @@ def logPredictionSupabase(
         ):
     supabase = get_supabase_client()
     student_metrics = {
-        "PROM_PERIODO": int(X['PROM_PERIODO'][0]),
+        "PROM_PERIODO": float(X['PROM_PERIODO'][0]),
         "ASIST_PROM": float(X['ASIST_PROM'][0]),
         "TOTAL_MAT": int(X['TOTAL_MAT'][0]),
         "REPROBADAS": int(X['REPROBADAS'][0]),

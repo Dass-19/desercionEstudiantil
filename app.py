@@ -123,7 +123,7 @@ st.sidebar.markdown("## Navegación")
 
 with st.sidebar:
     seccion = st.radio(
-        label="",
+        label="Selecciona una opción",
         options=[
             "Análisis exploratorio",
             "Evaluación del modelo",
