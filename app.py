@@ -134,7 +134,7 @@ with st.sidebar:
 
     st.divider()
 
-    st.caption("Sistema de apoyo académico")
+    st.caption("By Dass")
 
 if seccion == "Análisis exploratorio":
     st.title("Análisis Exploratorio de Datos (EDA)")
@@ -283,6 +283,7 @@ elif seccion == "Predicción individual":
 
         try:
             logPredictionSupabase(
+                dropoutPredictor.data
                 prob_rf,
                 prob_lr,
                 pred,
