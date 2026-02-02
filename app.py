@@ -25,6 +25,35 @@ st.set_page_config(
     page_title="Predicción de Deserción Estudiantil",
     layout="wide")
 
+st.markdown("""
+            <style>
+            .result-box {
+            padding: 2rem;
+            border-radius: 12px;
+            text-align: center;
+            margin-top: 1rem;
+        }
+
+        .high-risk {
+            background-color: #ffe5e5;
+            border: 2px solid #ff4b4b;
+            color: #8b0000;
+        }
+
+        .low-risk {
+            background-color: #e8f5e9;
+            border: 2px solid #2e7d32;
+            color: #1b5e20;
+        }
+
+        .metric-card {
+            background-color: #fafafa;
+            border-radius: 10px;
+            padding: 1rem;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+
 
 @st.cache_resource
 def load_model():
@@ -37,6 +66,8 @@ def load_model():
 
 
 dropoutPredictor = load_model()
+if dropoutPredictor is None:
+    st.stop()
 
 
 @st.cache_data
@@ -172,15 +203,21 @@ elif seccion == "Predicción individual":
     st.title("Predicción de deserción estudiantil")
     st.caption("Ingrese los indicadores del estudiante para evaluar la probabilidad de deserción en el siguiente periodo.")
 
-    # 1. El Formulario con mejor layout
+    st.info(
+        "Esta herramienta estima el riesgo de deserción **para el siguiente periodo académico**, "
+        "basándose en patrones históricos. No reemplaza la evaluación institucional."
+        )
+
     with st.form("formulario_prediccion"):
         st.subheader("Rendimiento semestral del estudiante", text_alignment='center')
 
         col_a, col_b = st.columns(2)
         with col_a:
             prom_periodo = st.slider(
-                "Promedio del Periodo (0-10)",
-                0.0, 10.0, 5.5)
+                "Promedio del Periodo",
+                0.0, 10.0, 5.5,
+                help="Promedio final del último periodo académico (escala 0 a 10)"
+            )
             asistencia = st.slider(
                 "Promedio de asistencia (0-100)",
                 0.0, 100.0, 50.0)
@@ -196,8 +233,10 @@ elif seccion == "Predicción individual":
                 "Nivel / Semestre",
                 1, 8, 1)
             repitencias = st.number_input(
-                "Repitencias (**número de veces que ha repetido al menos una materia**)",
-                0, 10, 0)
+                "Repitencias",
+                0, 10, 0,
+                help="Número de veces que el estudiante ha repetido al menos una asignatura"
+            )
 
         submitted = st.form_submit_button(
             "Predecir deserción",
@@ -213,8 +252,9 @@ elif seccion == "Predicción individual":
             'REPITENCIAS': [repitencias],
             'NIVEL': [nivel]
         })
+        with st.spinner("Calculando riesgo de deserción..."):
+            prob_rf, pred, prob_lr = dropoutPredictor.predict(input_data)
 
-        prob_rf, pred, prob_lr = dropoutPredictor.predict(input_data)
         try:
             logPredictionSupabase(
                 prob_rf,
@@ -226,6 +266,8 @@ elif seccion == "Predicción individual":
         except Exception as e:
              st.warning("No se pudo registrar la predicción.")
 
+        st.divider()
+        st.subheader("Resultado de la evaluación")
         if pred == 1:
             st.markdown(f"""
                 <div class="result-box high-risk">
@@ -235,12 +277,14 @@ elif seccion == "Predicción individual":
             st.caption("El modelo detectó patrones críticos de deserción.")
         else:
             st.markdown(f"""
+                <div class="result-box low-risk">
                     <h1 style='margin:0;'>Riesgo del {prob_rf:.1%}</h1>
                 </div>
             """, unsafe_allow_html=True)
             st.caption("El modelo no detectó patrones de deserción.")
 
         st.subheader("Factores que influyen en la predicción")
+        st.caption("Variables con mayor impacto según el modelo entrenado.")
         with st.spinner("Analizando factores clave..."):
             fig = dropoutPredictor.explain()
             st.pyplot(fig, )
