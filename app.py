@@ -119,16 +119,24 @@ def load_data():
     return df
 
 
-st.sidebar.title("Navegación")
-seccion = st.sidebar.radio(
-    "Secciones",
-    [
-        "Dashboard EDA",
-        "Métricas del modelo",
-        "Predicción individual"
-        ])
+st.sidebar.markdown("## Navegación")
 
-if seccion == "Dashboard EDA":
+with st.sidebar:
+    seccion = st.radio(
+        label="",
+        options=[
+            "Análisis exploratorio",
+            "Evaluación del modelo",
+            "Predicción individual"
+        ],
+        index=2
+    )
+
+    st.divider()
+
+    st.caption("Sistema de apoyo académico")
+
+if seccion == "Análisis exploratorio":
     st.title("Análisis Exploratorio de Datos (EDA)")
 
     df = load_data()
@@ -172,7 +180,7 @@ if seccion == "Dashboard EDA":
             width='stretch'
             )
 
-elif seccion == "Métricas del modelo":
+elif seccion == "Evaluación del modelo":
     st.title("Evaluación del modelo")
     st.caption("Algoritmo: Random Forest Classifier")
 
