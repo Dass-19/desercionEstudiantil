@@ -39,7 +39,7 @@ def plotFeatureImportances(fp):
     )
 
     ax.set_xlabel("Puntaje de Importancia")
-    ax.set_ylabel("Características")
+    ax.set_ylabel("")
 
     sns.despine(left=True, bottom=True)
     plt.tight_layout()
@@ -55,7 +55,7 @@ def plotPromAverage(df):
         color="#4e79a7",
         ax=ax
         )
-    ax.set_title("Distribución de Promedios Académicos")
+    ax.set_ylabel("")
     ax.set_xlabel("Promedio")
 
     sns.despine(left=True, bottom=True)
@@ -92,7 +92,8 @@ def plotStudentsLevel(df):
         palette="viridis",
         ax=ax
         )
-    ax.set_title("Cantidad de Estudiantes por Nivel")
+    ax.set_xlabel("Nivel")
+    ax.set_ylabel("")
 
     sns.despine(left=True, bottom=True)
     plt.tight_layout()

@@ -27,32 +27,50 @@ st.set_page_config(
 
 st.markdown("""
             <style>
-            .result-box {
-            padding: 2rem;
-            border-radius: 12px;
-            text-align: center;
-            margin-top: 1rem;
-        }
+            .rf-card {
+                border-radius: 16px;
+                padding: 1.6rem 2.2rem;
+                box-shadow: 0 8px 22px rgba(0,0,0,0.10);
+                margin: 1.2rem 0;
+            }
 
-        .high-risk {
-            background-color: #ffe5e5;
-            border: 2px solid #ff4b4b;
-            color: #8b0000;
-        }
+            .rf-low {
+                background: linear-gradient(135deg, #e8f5e9, #f6fff7);
+                border-left: 6px solid #2e7d32;
+            }
 
-        .low-risk {
-            background-color: #e8f5e9;
-            border: 2px solid #2e7d32;
-            color: #1b5e20;
-        }
+            .rf-high {
+                background: linear-gradient(135deg, #ffebee, #fff5f5);
+                border-left: 6px solid #c62828;
+            }
 
-        .metric-card {
-            background-color: #fafafa;
-            border-radius: 10px;
-            padding: 1rem;
-        }
-        </style>
-        """, unsafe_allow_html=True)
+            .rf-title {
+                font-size: 0.75rem;
+                font-weight: 700;
+                letter-spacing: 0.06em;
+                text-transform: uppercase;
+                margin-bottom: 0.4rem;
+            }
+
+            .rf-low .rf-title { color: #2e7d32; }
+            .rf-high .rf-title { color: #c62828; }
+
+            .rf-value {
+                font-size: 2.4rem;
+                font-weight: 900;
+            }
+
+            .rf-low .rf-value { color: #1b5e20; }
+            .rf-high .rf-value { color: #8e0000; }
+
+            .rf-text {
+                margin-top: 0.6rem;
+                font-size: 0.95rem;
+                color: #333;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True)
 
 
 @st.cache_resource
@@ -129,14 +147,14 @@ if seccion == "Dashboard EDA":
     col_left, col_right = st.columns(2)
 
     with col_left:
-        st.subheader("Distribución de notas", text_alignment='center')
+        st.subheader("Distribución de promedios", text_alignment='center')
         st.pyplot(
             plotPromAverage(df),
             width='stretch'
             )
 
     with col_right:
-        st.subheader("Estudiantes por nivel", text_alignment='center')
+        st.subheader("Distirbución de estudiantes por nivel", text_alignment='center')
         st.pyplot(
             plotStudentsLevel(df),
             width='stretch'
@@ -267,22 +285,25 @@ elif seccion == "Predicción individual":
              st.warning("No se pudo registrar la predicción.")
 
         st.divider()
-        st.subheader("Resultado de la evaluación")
-        if pred == 1:
-            st.markdown(f"""
-                <div class="result-box high-risk">
-                    <h1 style='margin:0;'>Riesgo del {prob_rf:.1%}</h1>
-                </div>
-            """, unsafe_allow_html=True)
-            st.caption("El modelo detectó patrones críticos de deserción.")
-        else:
-            st.markdown(f"""
-                <div class="result-box low-risk">
-                    <h1 style='margin:0;'>Riesgo del {prob_rf:.1%}</h1>
-                </div>
-            """, unsafe_allow_html=True)
-            st.caption("El modelo no detectó patrones de deserción.")
+        risk_class = "rf-high" if prob_rf >= dropoutPredictor.rf_threshold else "rf-low"
 
+        message = (
+            "Se identifican indicadores asociados a riesgo de deserción académica."
+            if prob_rf >= dropoutPredictor.rf_threshold
+            else "No se detectan patrones significativos de riesgo académico."
+        )
+
+        st.subheader("Resultado de la evaluación")
+
+        st.markdown(f"""
+        <div class="rf-card {risk_class}">
+            <div class="rf-title">Random Forest · Riesgo estimado</div>
+            <div class="rf-value">{prob_rf*100:.1f}%</div>
+            <div class="rf-text">{message}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.divider()
         st.subheader("Factores que influyen en la predicción")
         st.caption("Variables con mayor impacto según el modelo entrenado.")
         with st.spinner("Analizando factores clave..."):
