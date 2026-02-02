@@ -9,7 +9,7 @@ from src.utils.figures import (
     plotPromAverage,
     plotStudentsLevel
 )
-from src.utils.logging import logPrediction
+from src.utils.supabaseLogger import logPredictionSupabase
 
 
 RF_MODEL_PATH = st.secrets["RF_MODEL_PATH"]
@@ -215,8 +215,7 @@ elif seccion == "Predicción individual":
         })
 
         prob_rf, pred, prob_lr = dropoutPredictor.predict(input_data)
-        logPrediction(
-            LOG_PATH,
+        logPredictionSupabase(
             prob_rf,
             prob_lr,
             pred,
