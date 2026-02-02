@@ -283,7 +283,7 @@ elif seccion == "Predicción individual":
 
         try:
             logPredictionSupabase(
-                dropoutPredictor.data
+                dropoutPredictor.data,
                 prob_rf,
                 prob_lr,
                 pred,
