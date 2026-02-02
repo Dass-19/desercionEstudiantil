@@ -22,7 +22,7 @@ LOG_PATH = st.secrets["LOG_PATH"]
 
 
 st.set_page_config(
-    page_title="Predicción de Deserción Estudiantil",
+    page_title="Predicción de deserción estudiantil",
     layout="wide")
 
 st.markdown("""
@@ -129,7 +129,7 @@ with st.sidebar:
             "Evaluación del modelo",
             "Predicción individual"
         ],
-        index=2
+        index=0
     )
 
     st.divider()
@@ -145,61 +145,74 @@ if seccion == "Análisis exploratorio":
     tasa_riesgo = df['RIESGO_t1'].mean()
     prom_gral = df['PROM_PERIODO'].mean()
 
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Total estudiantes", f"{total_est}")
-    col2.metric("Tasa de deserción", f"{tasa_riesgo:.2%}")
-    col3.metric("Promedio general", f"{prom_gral:.2f}")
-
-    st.divider()
-
-    col_left, col_right = st.columns(2)
-
-    with col_left:
-        st.subheader("Distribución de promedios", text_alignment='center')
-        st.pyplot(
-            plotPromAverage(df),
-            width='stretch'
-            )
-
-    with col_right:
-        st.subheader("Distirbución de estudiantes por nivel", text_alignment='center')
-        st.pyplot(
-            plotStudentsLevel(df),
-            width='stretch'
-            )
-
-    st.subheader("Relación asistencia vs rendimiento", text_alignment='center')
-    st.pyplot(
-        plotAttendanceVsMean(df),
-        width='stretch'
-        )
-
-    with st.expander("Ver tabla de datos"):
-        st.dataframe(
-            df.head(15),
-            width='stretch'
-            )
-
-elif seccion == "Evaluación del modelo":
-    st.title("Evaluación del modelo")
-    st.caption("Algoritmo: Random Forest Classifier")
-
     with st.container(border=True):
         cols = st.columns(3)
         cols[0].metric(
+            "Total estudiantes",
+            f"{total_est}"
+            )
+        cols[1].metric(
+            "Tasa de deserción",
+            f"{tasa_riesgo:.2%}"
+            )
+        cols[2].metric(
+            "Promedio general",
+            f"{prom_gral:.2f}"
+            )
+
+    tab1, tab2, tab3 = st.tabs([
+        "Rendimiento académico",
+        "Distribución estudiantil",
+        "Asistencia"
+    ])
+
+    with tab1:
+        st.subheader("Distribución de promedios")
+        st.caption("Muestra cómo se distribuyen los promedios académicos de los estudiantes.")
+        st.pyplot(plotPromAverage(df), width="stretch")
+
+    with tab2:
+        st.subheader("Distribución de estudiantes por nivel")
+        st.caption("Cantidad de estudiantes según su nivel académico.")
+        st.pyplot(plotStudentsLevel(df), width="stretch")
+
+    with tab3:
+        st.subheader("Asistencia vs rendimiento")
+        st.caption("Relación entre la asistencia a clases y el promedio académico.")
+        st.pyplot(plotAttendanceVsMean(df), width="stretch")
+        st.info(
+            "Una menor asistencia está asociada a promedios más bajos "
+            "y a una mayor presencia de estudiantes en riesgo de deserción."
+        )
+
+    with st.expander("Ver muestra de los datos"):
+        st.dataframe(df.head(8), width="stretch")
+
+elif seccion == "Evaluación del modelo":
+    st.title("Evaluación del modelo")
+    st.caption("Random Forest Classifier")
+
+    with st.container(border=True):
+        cols = st.columns(4)
+        cols[0].metric(
             "Accuracy",
             f"{metrics['accuracy']:.2%}",
-            help="Precisión global del modelo"
+            help="Porcentaje total de predicciones correctas."
             )
         cols[1].metric(
             "ROC-AUC",
             f"{metrics['roc_auc']:.2%}",
-            help="Capacidad de discriminación entre clases"
+            help="Qué tan bien el modelo distingue entre estudiantes que desertan y los que no."
             )
         cols[2].metric(
-            "Balanced Acc",
+            "Balanced Accuracy",
             f"{metrics['balanced_accuracy']:.2%}",
-            help="Precisión ajustada por desbalance de clases"
+            help="Precisión considerando que hay más estudiantes de un tipo que de otro."
+            )
+        cols[3].metric(
+            "F1-Score",
+            f"{metrics['f1_score']:.2%}",
+            help="Balance entre detectar bien a quienes desertan y evitar falsas alarmas."
             )
 
     tab1, tab2 = st.tabs([
@@ -208,13 +221,26 @@ elif seccion == "Evaluación del modelo":
         ])
 
     with tab1:
-        st.subheader("Matriz de confusión")
-        st.caption("Permite identificar qué clases se están confundiendo más entre sí.")
+        st.subheader("¿Dónde se equivoca el modelo?")
+        st.caption("Este análisis muestra qué tan bien el modelo identifica a los estudiantes que podrían desertar.")
+
+        st.markdown("### Matriz de confusión")
+        st.caption("Compara las predicciones del modelo con la realidad.")
+
         cm_fig = plotConfusionMatrix(cm_data)
-        st.pyplot(
-            cm_fig,
-            width='stretch'
-            )
+        st.pyplot(cm_fig, width="stretch")
+        with st.expander("Ver métricas en detalle"):
+            cols = st.columns(2)
+            cols[0].metric(
+                "Precision",
+                f"{metrics['precission']:.2%}",
+                help="Cuando el modelo predice deserción, ¿con qué frecuencia acierta?"
+                )
+            cols[1].metric(
+                "Recall",
+                f"{metrics['recall']:.2%}",
+                help="De todos los estudiantes que realmente desertaron, ¿a cuántos logró detectar?"
+                )
 
     with tab2:
         st.subheader("Importancia de variables")
@@ -231,7 +257,7 @@ elif seccion == "Predicción individual":
 
     st.info(
         "Esta herramienta estima el riesgo de deserción **para el siguiente periodo académico**, "
-        "basándose en patrones históricos. No reemplaza la evaluación institucional."
+        "basándose en patrones históricos."
         )
 
     with st.form("formulario_prediccion"):

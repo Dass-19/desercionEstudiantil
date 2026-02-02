@@ -57,5 +57,7 @@ Thumbs.db
 data/raw
 data/interim
 
+todo.txt
 
+.streamlit/secrets.toml
 .env

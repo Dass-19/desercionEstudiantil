@@ -66,23 +66,28 @@ def plotPromAverage(df):
 
 def plotAttendanceVsMean(df):
     fig, ax = plt.subplots(figsize=(7, 4))
+
     sns.scatterplot(
         data=df,
         x="ASIST_PROM",
         y="PROM_PERIODO",
         hue="RIESGO_t1",
-        palette="coolwarm",
+        palette={0: "#2ecc71", 1: "#e74c3c"},
+        alpha=0.6,
+        s=40,
         ax=ax
-        )
+    )
+
+    ax.set_xlabel("Asistencia promedio (%)", fontsize=9)
+    ax.set_ylabel("Promedio académico", fontsize=9)
+
     ax.tick_params(labelsize=8)
-    ax.set_xlabel("Asistencia %", fontsize=9)
-    ax.set_ylabel("Promedio", fontsize=9)
+
     ax.legend(
         title='Deserción (0: No, 1: Si)',
         fontsize='8',
         title_fontsize='9',
         loc='upper left',
-        bbox_to_anchor=(1, 1)
         )
 
     sns.despine(left=True, bottom=True)

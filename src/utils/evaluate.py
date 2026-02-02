@@ -40,7 +40,7 @@ def modelEvaluation(
         y_test: pd.Series):
     '''
     Returns `CV Accuracy`, `Accuracy`, `Balanced accuracy`,
-    `Classification report`, `Feature importances`
+    `Classification report`, `Feature importances`, 'ROC-AUC'
     and `Confussion matrix`.
 
     :param pipeline: Predictor pipeline
@@ -61,14 +61,30 @@ def modelEvaluation(
 
     cv = TimeSeriesSplit(n_splits=3)
 
-    cv_auc = cross_val_score(pipeline, X, y, cv=cv, scoring='roc_auc').mean()
-    cv_acc = cross_val_score(pipeline, X, y, cv=cv, scoring='accuracy').mean()
+    cv_auc = cross_val_score(
+        pipeline,
+        X,
+        y,
+        cv=cv,
+        scoring='roc_auc'
+        ).mean()
+    cv_acc = cross_val_score(
+        pipeline,
+        X,
+        y,
+        cv=cv,
+        scoring='accuracy'
+        ).mean()
 
     y_pred = pipeline.predict(X_test)
     y_proba = pipeline.predict_proba(X_test)[:, 1]
+
     test_auc = roc_auc_score(y_test, y_proba)
     acc_score = accuracy_score(y_test, y_pred)
     balanced_acc_score = balanced_accuracy_score(y_test, y_pred)
+    f1 = f1_score(y_test, y_pred, average='macro')
+    recall = recall_score(y_test, y_pred, average='macro')
+    precission = precision_score(y_test, y_pred, average='macro')
 
     print(f"CV ROC-AUC: {cv_auc * 100:.2f}%")
     print(f"CV Accuracy: {cv_acc * 100:.2f}%")
@@ -80,49 +96,77 @@ def modelEvaluation(
     print(classification_report(y_test, y_pred, target_names=present_classes))
 
     metrics = {
-        "accuracy": cv_acc,
+        "accuracy": acc_score,
         "roc_auc": test_auc,
         "balanced_accuracy": balanced_acc_score,
+        "f1_score": f1,
+        "recall": recall,
+        "precission": precission
     }
 
-    with open(METRICS_PATH, "w") as f:
-        json.dump(metrics, f)
-
-    fig, axes = plt.subplots(2, 2, figsize=(15, 12))
+    fig, axes = plt.subplots(
+        2,
+        2,
+        figsize=(15, 12)
+        )
 
     if hasattr(model, 'feature_importances_'):
-        importances = pd.DataFrame({
-            'Feature': pipeline.named_steps['rf'].feature_names_in_,
-            'Importance': model.feature_importances_
-        }).sort_values(by='Importance', ascending=False)
+        importances = pd.DataFrame(
+            {
+                'Feature': pipeline.named_steps['rf'].feature_names_in_,
+                'Importance': model.feature_importances_
+                }).sort_values(by='Importance', ascending=False)
 
         importances.to_csv(FP_PATH, index=False)
 
-        sns.barplot(x='Importance', y='Feature', data=importances.head(15),
-                    ax=axes[0, 0], color="skyblue")
+        sns.barplot(
+            x='Importance',
+            y='Feature',
+            data=importances.head(10),
+            ax=axes[0, 0],
+            color="skyblue"
+            )
         axes[0, 0].set_title("Feature Importances")
 
     cm = confusion_matrix(y_test, y_pred)
 
-    pd.DataFrame(cm).to_csv(CM_PATH, index=False)
-
-    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=axes[0, 1],
-                xticklabels=model.classes_, yticklabels=model.classes_)
+    sns.heatmap(
+        cm,
+        annot=True,
+        fmt='d',
+        cmap='Blues',
+        ax=axes[0, 1],
+        xticklabels=model.classes_,
+        yticklabels=model.classes_
+        )
     axes[0, 1].set_xlabel('Predicted')
     axes[0, 1].set_ylabel('True')
     axes[0, 1].set_title('Confusion Matrix')
 
     fpr, tpr, _ = roc_curve(y_test, y_proba)
-    axes[1, 0].plot(fpr,
-                    tpr,
-                    color='darkorange',
-                    lw=2,
-                    label=f'AUC = {test_auc:.2f}')
-    axes[1, 0].plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+    axes[1, 0].plot(
+        fpr,
+        tpr,
+        color='darkorange',
+        lw=2,
+        label=f'AUC = {test_auc:.2f}'
+        )
+    axes[1, 0].plot(
+        [0, 1],
+        [0, 1],
+        color='navy',
+        lw=2,
+        linestyle='--'
+        )
     axes[1, 0].set_xlabel('False Positive Rate')
     axes[1, 0].set_ylabel('True Positive Rate')
     axes[1, 0].set_title('Receiver Operating Characteristic (ROC)')
     axes[1, 0].legend(loc="lower right")
+
+    pd.DataFrame(cm).to_csv(CM_PATH, index=False)
+
+    with open(METRICS_PATH, "w") as f:
+        json.dump(metrics, f)
 
     plt.tight_layout()
     plt.show()
