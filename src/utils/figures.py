@@ -77,7 +77,14 @@ def plotAttendanceVsMean(df):
     ax.tick_params(labelsize=8)
     ax.set_xlabel("Asistencia %", fontsize=9)
     ax.set_ylabel("Promedio", fontsize=9)
-    ax.legend(title='Deserción (0: No, 1: Si)')
+    ax.legend(
+        title='Deserción (0: No, 1: Si)',
+        fontsize='8',
+        title_fontsize='9',
+        loc='upper left',
+        bbox_to_anchor=(1, 1)
+        )
+
     sns.despine(left=True, bottom=True)
     plt.tight_layout()
 
