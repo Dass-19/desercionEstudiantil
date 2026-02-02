@@ -215,13 +215,16 @@ elif seccion == "Predicción individual":
         })
 
         prob_rf, pred, prob_lr = dropoutPredictor.predict(input_data)
-        logPredictionSupabase(
-            prob_rf,
-            prob_lr,
-            pred,
-            dropoutPredictor.rf_threshold,
-            dropoutPredictor.rf_version
-        )
+        try:
+            logPredictionSupabase(
+                prob_rf,
+                prob_lr,
+                pred,
+                dropoutPredictor.rf_threshold,
+                dropoutPredictor.rf_version
+            )
+        except Exception as e:
+             st.warning("No se pudo registrar la predicción.")
 
         if pred == 1:
             st.markdown(f"""
