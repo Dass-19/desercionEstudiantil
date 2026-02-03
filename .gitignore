@@ -49,15 +49,6 @@ ipython_config.py
 *.swo
 *~
 
-# OS
-.DS_Store
-Thumbs.db
-
-# Data files
-data/raw
-data/interim
-
-todo.txt
 
 .streamlit/secrets.toml
 .env
