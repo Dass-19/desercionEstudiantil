@@ -1,6 +1,3 @@
-from pathlib import Path
-import sys
-import os
 import pandas as pd
 import json
 import matplotlib.pyplot as plt
@@ -8,28 +5,11 @@ import seaborn as sns
 from sklearn.model_selection import cross_val_score, TimeSeriesSplit
 from imblearn.pipeline import Pipeline
 from sklearn.metrics import (
-    classification_report,
-    confusion_matrix,
-    roc_auc_score,
-    precision_score,
-    recall_score,
-    f1_score,
-    balanced_accuracy_score,
-    accuracy_score,
-    roc_curve
+    classification_report, confusion_matrix, roc_auc_score,
+    precision_score, recall_score, f1_score,
+    balanced_accuracy_score, accuracy_score, roc_curve
 )
 from utils.model import findBestThreshold
-from dotenv import load_dotenv
-
-
-ROOT = Path.cwd().resolve().parents[0]
-sys.path.insert(0, str(ROOT))
-
-
-load_dotenv()
-METRICS_PATH = ROOT / str(os.getenv("METRICS_PATH"))
-CM_PATH = ROOT / str(os.getenv("CM_PATH"))
-FP_PATH = ROOT / str(os.getenv("FP_PATH"))
 
 
 def modelEvaluation(
@@ -110,14 +90,14 @@ def modelEvaluation(
         figsize=(15, 12)
         )
 
-    if hasattr(model, 'feature_importances_'):
+    if hasattr(model.named_steps["rf"], 'feature_importances_'):
         importances = pd.DataFrame(
             {
-                'Feature': pipeline.named_steps['rf'].feature_names_in_,
-                'Importance': model.feature_importances_
+                'Feature': model.named_steps["rf"].feature_names_in_,
+                'Importance': model.named_steps["rf"].feature_importances_
                 }).sort_values(by='Importance', ascending=False)
 
-        importances.to_csv(FP_PATH, index=False)
+        importances.to_csv("../artifacts/feature_importance.csv", index=False)
 
         sns.barplot(
             x='Importance',
@@ -163,9 +143,9 @@ def modelEvaluation(
     axes[1, 0].set_title('Receiver Operating Characteristic (ROC)')
     axes[1, 0].legend(loc="lower right")
 
-    pd.DataFrame(cm).to_csv(CM_PATH, index=False)
+    pd.DataFrame(cm).to_csv("../artifacts/confusion_matrix.csv", index=False)
 
-    with open(METRICS_PATH, "w") as f:
+    with open("../artifacts/metrics.json", "w") as f:
         json.dump(metrics, f)
 
     plt.tight_layout()

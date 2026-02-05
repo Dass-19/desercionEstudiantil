@@ -1,13 +1,12 @@
 import pandas as pd
 from sklearn.model_selection import RandomizedSearchCV, TimeSeriesSplit
 from sklearn.ensemble import RandomForestClassifier
-from imblearn.pipeline import Pipeline
+from sklearn.pipeline import Pipeline
 from sklearn.metrics import (
     make_scorer,
     f1_score,
     precision_recall_curve
 )
-from imblearn.over_sampling import SMOTE
 
 
 def tuneHyperparameters(
@@ -26,21 +25,17 @@ def tuneHyperparameters(
     '''
 
     pipe = Pipeline([
-        ('smote', SMOTE(random_state=42)),
         ('rf', RandomForestClassifier(
             random_state=42,
             class_weight='balanced'))
     ])
 
     paramDist = {
-        'smote__sampling_strategy': ['auto', 'not majority'],
-        'smote__k_neighbors': [3, 5, 7],
-        'rf__n_estimators': [100, 200, 300, 400, 500, 600, 700],
-        'rf__max_depth': [6, 9, 12, 15, 18, None],
-        'rf__min_samples_split': [1, 3, 5, 7, 10],
-        'rf__min_samples_leaf': [1, 3, 5, 7, 9],
-        'rf__max_features': ['sqrt', 'log2', None],
-        'rf__criterion': ['gini', 'entropy']
+        'rf__n_estimators': [200, 300, 500, 700],
+        'rf__max_depth': [3, 5, 6, 9, 12, None],
+        'rf__min_samples_split': [2, 5, 7,  10],
+        'rf__min_samples_leaf': [1, 3, 5],
+        'rf__max_features': ['sqrt', 'log2'],
     }
 
     cv = TimeSeriesSplit(n_splits=3)
@@ -57,7 +52,7 @@ def tuneHyperparameters(
         n_iter=30,
         cv=cv,
         scoring=scoring,
-        refit='roc_auc',
+        refit='f1_macro',
         random_state=42,
         n_jobs=-1,
         verbose=2)

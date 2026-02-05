@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import shap
 import numpy as np
 import seaborn as sns
+from src.utils.features import featureEngineering
 
 
 class DropoutPredictor:
@@ -13,12 +14,18 @@ class DropoutPredictor:
 
     def __init__(self, artifact_paths: list[str]):
         rf_artifact = joblib.load(artifact_paths[0])
+
         self.rf_model = rf_artifact["model"]
         self.rf_threshold = rf_artifact["threshold"]
         self.rf_features = rf_artifact["features"]
         self.rf_version = rf_artifact["model_version"]
-        model_final = self.rf_model[-1] if hasattr(self.rf_model, "steps") else self.model
-        self.explainer = shap.TreeExplainer(model_final)
+
+        if hasattr(self.rf_model, 'named_steps'):
+            model_step = self.rf_model.steps[-1][1]
+        else:
+            model_step = self.rf_model
+
+        self.explainer = shap.TreeExplainer(model_step)
         self.data = None
 
         lr_artifact = joblib.load(artifact_paths[1])
@@ -34,16 +41,13 @@ class DropoutPredictor:
         :param X: Feature set for prediction.
         :type X: pd.DataFrame
         '''
-
         X = X.copy()
-
-        X["PROP_REPROB"] = X["REPROBADAS"] / X["TOTAL_MAT"]
-        X["EFICIENCIA"] = X["ASIST_PROM"] * (1 - X["PROP_REPROB"])
+        X = featureEngineering(X)
+        self.data = X
 
         rf_proba = self.rf_model.predict_proba(X[self.rf_features])[0, 1]
         rf_pred = int(rf_proba >= self.rf_threshold)
 
-        self.data = X
         lr_proba = self.lr_model.predict_proba(X[self.lr_features])[0, 1]
 
         return rf_proba, rf_pred, lr_proba
@@ -55,11 +59,26 @@ class DropoutPredictor:
         :param X: Feature set for prediction.
         :type X: pd.DataFrame
         '''
+        if self.data is None:
+            raise ValueError("Run predict() before explain().")
+
         sns.set_style("whitegrid")
         sns.set_context("notebook", font_scale=1.1)
 
-        shap_values = self.explainer.shap_values(self.data)
-        sv = shap_values[1] if isinstance(shap_values, list) else shap_values
+        X_explain = self.data[self.rf_features].iloc[[0]]
+
+        if hasattr(self.rf_model, 'named_steps'):
+            X_transformed = X_explain
+            for name, transformer in self.rf_model.steps[:-1]:
+                X_transformed = transformer.transform(X_transformed)
+            shap_values = self.explainer(X_transformed)
+        else:
+            shap_values = self.explainer(X_explain)
+
+        if hasattr(shap_values, 'values'):
+            sv = shap_values.values
+        else:
+            sv = shap_values
 
         sv = np.asarray(sv)
 
@@ -68,61 +87,49 @@ class DropoutPredictor:
         elif sv.ndim == 2:
             sv = sv[0, :]
 
-        sv = sv.ravel()
+        sv = sv.flatten()
 
-        if sv.shape[0] != len(self.rf_features):
-            if sv.shape[0] == 2 * len(self.rf_features):
-                sv = sv[len(self.rf_features):]
-            else:
-                pass
+
+        assert len(sv) == len(self.rf_features), (
+            f"SHAP values length ({len(sv)}) != features length ({len(self.rf_features)})"
+        )
 
         df_expl = pd.DataFrame({
             "Variable": self.rf_features,
             "Impacto": sv
-        }).sort_values(by="Impacto", key=abs, ascending=True)
+        }).sort_values(
+            by="Impacto", key=np.abs, ascending=True
+        )
 
-        df_expl['Tipo'] = df_expl['Impacto'].apply(
-            lambda x: 'Aumenta riesgo' if x > 0 else 'Disminuye riesgo'
+        df_expl["Tipo"] = np.where(
+            df_expl["Impacto"] > 0,
+            "Aumenta riesgo",
+            "Disminuye riesgo"
         )
 
         fig, ax = plt.subplots(figsize=(10, 6))
-
-        palette = {'Aumenta riesgo': '#E74C3C', 'Disminuye riesgo': '#27AE60'}
+        palette = {
+            "Aumenta riesgo": "#E74C3C",
+            "Disminuye riesgo": "#27AE60"
+        }
 
         sns.barplot(
             data=df_expl,
-            y='Variable',
-            x='Impacto',
-            hue='Tipo',
+            y="Variable",
+            x="Impacto",
+            hue="Tipo",
             palette=palette,
             ax=ax,
             dodge=False,
             alpha=0.85
         )
 
-        ax.axvline(
-            x=0,
-            color='#34495E',
-            linestyle='-',
-            linewidth=1.5,
-            alpha=0.7
-            )
-
+        ax.axvline(0, color="#34495E", linewidth=1.5, alpha=0.7)
         ax.set_xlabel("")
         ax.set_ylabel("")
-
-        ax.legend(
-            title='Efecto',
-            title_fontsize=10,
-            fontsize=9,
-            loc='upper right',
-            frameon=True,
-            shadow=True
-        )
-        ax.grid(axis='x', alpha=0.3, linestyle='--', linewidth=0.7)
-        ax.set_axisbelow(True)
-
+        ax.legend(title="Efecto")
+        ax.grid(axis="x", alpha=0.3, linestyle="--")
         sns.despine(left=True, bottom=True)
-
         plt.tight_layout()
+
         return fig

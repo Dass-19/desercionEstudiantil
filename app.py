@@ -3,22 +3,11 @@ import pandas as pd
 import json
 from src.models.dropoutPredictor import DropoutPredictor
 from src.utils.figures import (
-    plotConfusionMatrix,
-    plotFeatureImportances,
-    plotAttendanceVsMean,
-    plotPromAverage,
+    plotConfusionMatrix, plotFeatureImportances,
+    plotAttendanceVsMean, plotPromAverage,
     plotStudentsLevel
 )
 from src.utils.supabaseLogger import logPredictionSupabase
-
-
-RF_MODEL_PATH = st.secrets["RF_MODEL_PATH"]
-LR_MODEL_PATH = st.secrets["LR_MODEL_PATH"]
-METRICS_PATH = st.secrets["METRICS_PATH"]
-CM_PATH = st.secrets["CM_PATH"]
-FP_PATH = st.secrets["FP_PATH"]
-PROCESSED_DATA_PATH = st.secrets["ALL_PROCESSED_DATA_PATH"]
-LOG_PATH = st.secrets["LOG_PATH"]
 
 
 st.set_page_config(
@@ -76,7 +65,10 @@ st.markdown("""
 @st.cache_resource
 def load_model():
     try:
-        dp = DropoutPredictor([RF_MODEL_PATH, LR_MODEL_PATH])
+        dp = DropoutPredictor(
+            ["artifacts/rf_dropout_v2.joblib",
+             "artifacts/dropout_lr_v2.joblib"
+             ])
         return dp
     except Exception as e:
         st.error(f"Error crítico al cargar el modelo: {e}")
@@ -89,12 +81,12 @@ if dropoutPredictor is None:
 
 
 @st.cache_data
-def load_metrics():
-    with open(str(METRICS_PATH)) as f:
+def load_metrics(file_path):
+    with open(file_path) as f:
         return json.load(f)
 
 
-metrics = load_metrics()
+metrics = load_metrics("artifacts/metrics.json")
 
 
 @st.cache_data
@@ -102,7 +94,7 @@ def get_cm_data(file_path):
     return pd.read_csv(file_path)
 
 
-cm_data = get_cm_data(CM_PATH)
+cm_data = get_cm_data("artifacts/confusion_matrix.csv")
 
 
 @st.cache_data
@@ -110,12 +102,12 @@ def get_fp_data(file_path):
     return pd.read_csv(file_path)
 
 
-fp_data = get_fp_data(FP_PATH)
+fp_data = get_fp_data("artifacts/feature_importance.csv")
 
 
 @st.cache_data
 def load_data():
-    df = pd.read_excel(str(PROCESSED_DATA_PATH))
+    df = pd.read_excel("data/processed/train_dataset.xlsx")
     return df
 
 
@@ -307,17 +299,17 @@ elif seccion == "Predicción individual":
         with st.spinner("Calculando riesgo de deserción..."):
             prob_rf, pred, prob_lr = dropoutPredictor.predict(input_data)
 
-        try:
-            logPredictionSupabase(
-                dropoutPredictor.data,
-                prob_rf,
-                prob_lr,
-                pred,
-                dropoutPredictor.rf_threshold,
-                dropoutPredictor.rf_version
-            )
-        except Exception as e:
-             st.warning("No se pudo registrar la predicción.")
+        # try:
+        #     logPredictionSupabase(
+        #         dropoutPredictor.data,
+        #         prob_rf,
+        #         prob_lr,
+        #         pred,
+        #         dropoutPredictor.rf_threshold,
+        #         dropoutPredictor.rf_version
+        #     )
+        # except Exception as e:
+        #      st.warning("No se pudo registrar la predicción.")
 
         st.divider()
         risk_class = "rf-high" if prob_rf >= dropoutPredictor.rf_threshold else "rf-low"
