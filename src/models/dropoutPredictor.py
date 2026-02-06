@@ -89,7 +89,6 @@ class DropoutPredictor:
 
         sv = sv.flatten()
 
-
         assert len(sv) == len(self.rf_features), (
             f"SHAP values length ({len(sv)}) != features length ({len(self.rf_features)})"
         )

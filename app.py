@@ -28,6 +28,11 @@ st.markdown("""
                 border-left: 6px solid #2e7d32;
             }
 
+            .rf-medium {
+                background: linear-gradient(135deg, #fff8e1, #fffdf5);
+                border-left: 6px solid #f9a825;
+            }
+
             .rf-high {
                 background: linear-gradient(135deg, #ffebee, #fff5f5);
                 border-left: 6px solid #c62828;
@@ -42,6 +47,8 @@ st.markdown("""
             }
 
             .rf-low .rf-title { color: #2e7d32; }
+            .rf-medium .rf-title { color: #f57f17; }
+
             .rf-high .rf-title { color: #c62828; }
 
             .rf-value {
@@ -50,6 +57,7 @@ st.markdown("""
             }
 
             .rf-low .rf-value { color: #1b5e20; }
+            .rf-medium .rf-value { color: #e65100; }
             .rf-high .rf-value { color: #8e0000; }
 
             .rf-text {
@@ -66,9 +74,11 @@ st.markdown("""
 def load_model():
     try:
         dp = DropoutPredictor(
-            ["artifacts/rf_dropout_v2.joblib",
-             "artifacts/dropout_lr_v2.joblib"
-             ])
+            [
+                "artifacts/dropout_rf_v2.joblib",
+                "artifacts/dropout_lr_v2.joblib"
+                ]
+                )
         return dp
     except Exception as e:
         st.error(f"Error crítico al cargar el modelo: {e}")
@@ -107,7 +117,7 @@ fp_data = get_fp_data("artifacts/feature_importance.csv")
 
 @st.cache_data
 def load_data():
-    df = pd.read_excel("data/processed/train_dataset.xlsx")
+    df = pd.read_excel("data/processed/all_dataset.xlsx")
     return df
 
 
@@ -312,13 +322,30 @@ elif seccion == "Predicción individual":
         #      st.warning("No se pudo registrar la predicción.")
 
         st.divider()
-        risk_class = "rf-high" if prob_rf >= dropoutPredictor.rf_threshold else "rf-low"
+        LOW_RISK_LIMIT = 0.40
+        THRESHOLD = dropoutPredictor.rf_threshold
 
-        message = (
-            "Se identifican indicadores asociados a riesgo de deserción académica."
-            if prob_rf >= dropoutPredictor.rf_threshold
-            else "No se detectan patrones significativos de riesgo académico."
-        )
+        if prob_rf < LOW_RISK_LIMIT:
+            risk_level = "low"
+        elif prob_rf < THRESHOLD:
+            risk_level = "medium"
+        else:
+            risk_level = "high"
+
+        if risk_level == "low":
+            risk_class = "rf-low"
+            message = "No se detectan patrones significativos de riesgo académico."
+        elif risk_level == "medium":
+            risk_class = "rf-medium"
+            message = (
+                "Se identifican señales tempranas de riesgo académico. "
+                "Se recomienda seguimiento preventivo."
+            )
+        else:
+            risk_class = "rf-high"
+            message = (
+                "Se identifican indicadores fuertes asociados a riesgo de deserción académica."
+            )
 
         st.subheader("Resultado de la evaluación")
 

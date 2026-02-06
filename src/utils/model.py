@@ -25,17 +25,17 @@ def tuneHyperparameters(
     '''
 
     pipe = Pipeline([
-        ('rf', RandomForestClassifier(
+        ('model', RandomForestClassifier(
             random_state=42,
             class_weight='balanced'))
     ])
 
     paramDist = {
-        'rf__n_estimators': [200, 300, 500, 700],
-        'rf__max_depth': [3, 5, 6, 9, 12, None],
-        'rf__min_samples_split': [2, 5, 7,  10],
-        'rf__min_samples_leaf': [1, 3, 5],
-        'rf__max_features': ['sqrt', 'log2'],
+        'model__n_estimators': [200, 300, 500, 700],
+        'model__max_depth': [3, 5, 6, 9, 12, None],
+        'model__min_samples_split': [2, 5, 7,  10],
+        'model__min_samples_leaf': [1, 3, 5],
+        'model__max_features': ['sqrt', 'log2'],
     }
 
     cv = TimeSeriesSplit(n_splits=3)

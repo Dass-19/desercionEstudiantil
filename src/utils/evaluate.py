@@ -90,11 +90,11 @@ def modelEvaluation(
         figsize=(15, 12)
         )
 
-    if hasattr(model.named_steps["rf"], 'feature_importances_'):
+    if hasattr(model.named_steps["model"], 'feature_importances_'):
         importances = pd.DataFrame(
             {
-                'Feature': model.named_steps["rf"].feature_names_in_,
-                'Importance': model.named_steps["rf"].feature_importances_
+                'Feature': model.named_steps["model"].feature_names_in_,
+                'Importance': model.named_steps["model"].feature_importances_
                 }).sort_values(by='Importance', ascending=False)
 
         importances.to_csv("../artifacts/feature_importance.csv", index=False)
